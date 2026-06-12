@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a5f">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>水準測量野帳</title>
+<style>
+  :root{
+    --navy:#1e3a5f; --accent:#2e7d5b; --bg:#eef1f5; --card:#ffffff;
+    --line:#d8dee6; --text:#22303f; --sub:#6b7a8c; --danger:#c0392b;
+    --bsrow:#fdf6e3;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+    background:var(--bg); color:var(--text); min-height:100vh;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  header{
+    background:var(--navy); color:#fff; padding:14px 16px;
+    padding-top:calc(14px + env(safe-area-inset-top));
+    display:flex; align-items:center; gap:10px;
+    position:sticky; top:0; z-index:10;
+  }
+  header h1{font-size:18px; font-weight:700; flex:1;}
+  #backBtn{
+    background:rgba(255,255,255,.15); color:#fff; border:none;
+    border-radius:8px; font-size:16px; padding:8px 14px;
+  }
+  main{max-width:560px; margin:0 auto; padding:16px 10px;}
+  .hidden{display:none !important;}
+
+  button{font-family:inherit; cursor:pointer;}
+  .primary{
+    display:block; width:100%; background:var(--accent); color:#fff;
+    border:none; border-radius:12px; font-size:17px; font-weight:700;
+    padding:16px; margin:14px 0;
+  }
+  .primary:active{opacity:.85;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line);
+    border-radius:12px; padding:14px 10px; margin-bottom:12px;
+  }
+  .cardHead{font-size:13px; font-weight:700; color:var(--sub); margin-bottom:10px; letter-spacing:.05em; padding-left:4px;}
+
+  label{display:block; font-size:13px; color:var(--sub); margin-bottom:10px;}
+  label > input{
+    display:block; width:100%; font-size:17px; padding:10px 12px;
+    border:1px solid var(--line); border-radius:8px; margin-top:4px;
+    background:#fff; color:var(--text);
+  }
+  input:focus{outline:2px solid var(--accent); border-color:var(--accent);}
+
+  /* ======== 野帳テーブル ======== */
+  .grid{
+    display:grid;
+    grid-template-columns: 1.15fr .95fr .95fr .95fr .95fr 26px;
+    gap:4px;
+    align-items:stretch;
+    margin-bottom:4px;
+  }
+  .gHead{
+    font-size:12px; font-weight:700; color:var(--sub);
+    text-align:center; padding:4px 0 2px;
+  }
+  .cell{
+    min-height:40px; border-radius:6px; font-size:16px;
+    display:flex; align-items:center; justify-content:flex-end;
+    padding:0 6px;
+  }
+  input.cell{
+    width:100%; border:1px solid var(--line); background:#fff;
+    text-align:right; color:var(--text); font-variant-numeric:tabular-nums;
+  }
+  input.cell.nameIn{text-align:left; font-weight:700;}
+  .calcCell{
+    background:#f2f7f4; color:var(--accent); font-weight:700;
+    font-variant-numeric:tabular-nums; justify-content:flex-end;
+  }
+  .blankCell{background:transparent;}
+  .gridRow-bs input.cell, .gridRow-bs .calcCell{background:var(--bsrow);}
+  .gridRow-bs .calcCell{color:#9a6b15;}
+  .gridRow-bs input.cell{border-color:#ecd9a0;}
+  .delBtn{
+    background:none; border:none; color:var(--sub); font-size:15px;
+    padding:0; border-radius:6px; min-height:40px;
+  }
+  .delBtn:active{color:var(--danger);}
+  .legend{
+    font-size:12px; color:var(--sub); padding:6px 4px 0; line-height:1.7;
+  }
+  .legend .bsMark{
+    display:inline-block; width:12px; height:12px; background:var(--bsrow);
+    border:1px solid #ecd9a0; border-radius:3px; vertical-align:-1px;
+  }
+
+  .addBtns{display:flex; gap:10px; margin:14px 0;}
+  .addBtns button{
+    flex:1; background:#fff; border:2px dashed var(--line); color:var(--sub);
+    border-radius:12px; padding:14px 6px; font-size:14px; font-weight:700;
+  }
+  .addBtns button:active{border-color:var(--accent); color:var(--accent);}
+
+  .calcLine{
+    background:#f2f7f4; border-radius:8px; padding:10px 12px;
+    font-size:14px; color:var(--sub); margin-bottom:10px;
+    display:flex; align-items:baseline; gap:6px;
+  }
+  .calcVal{font-size:20px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums;}
+  .calcLine .unit{font-size:13px;}
+
+  /* 一覧 */
+  .listItem{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:14px; margin-bottom:10px; display:flex; align-items:center; gap:10px;
+  }
+  .listItem .info{flex:1; min-width:0;}
+  .listItem .name{font-size:16px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .listItem .meta{font-size:13px; color:var(--sub); margin-top:3px;}
+  .empty{text-align:center; color:var(--sub); font-size:14px; padding:30px 0;}
+
+  .note{font-size:12px; color:var(--sub); text-align:center; margin-top:18px; line-height:1.7;}
+</style>
+</head>
+<body>
+
+<header>
+  <button id="backBtn" class="hidden">← 一覧</button>
+  <h1>水準測量野帳</h1>
+</header>
+
+<!-- ========== 一覧画面 ========== -->
+<main id="listView">
+  <button id="newBtn" class="primary">＋ 新しい測量を始める</button>
+  <div id="surveyList"></div>
+  <p class="note">データはこの端末（ブラウザ）の中に保存されます。<br>電波がない場所でも使えます。</p>
+</main>
+
+<!-- ========== 入力画面 ========== -->
+<main id="editView" class="hidden">
+  <section class="card">
+    <div class="cardHead">測量情報</div>
+    <label>測量名
+      <input id="svName" placeholder="例：測量内容">
+    </label>
+    <label>日付
+      <input type="date" id="svDate">
+    </label>
+  </section>
+
+  <section class="card">
+    <div class="cardHead">野帳</div>
+    <div class="grid" id="gridHead">
+      <div class="gHead" style="text-align:left;">測点</div>
+      <div class="gHead">BS</div>
+      <div class="gHead">IH</div>
+      <div class="gHead">FS</div>
+      <div class="gHead">GH</div>
+      <div class="gHead"></div>
+    </div>
+    <div id="rowsArea"></div>
+    <div class="legend">
+      <span class="bsMark"></span> 色付きの行＝器械を据えた点（BSとGHを入力 → IH自動計算）<br>
+      白い行＝測った点（FSを入力 → GH自動計算）　単位はすべて mm
+    </div>
+  </section>
+
+  <div class="addBtns">
+    <button id="addFS">＋ 測点を追加（FS）</button>
+    <button id="addBS">＋ 器械点を追加（BS）</button>
+  </div>
+
+  <section class="card">
+    <div class="cardHead">まとめ</div>
+    <div class="calcLine">行数：<span id="sumCount" class="calcVal">0</span><span class="unit">行</span></div>
+    <div class="calcLine">最後のGH：<span id="sumLast" class="calcVal">—</span><span class="unit">mm</span></div>
+  </section>
+
+  <button id="exportBtn" class="primary">📄 Excelファイルを出力</button>
+</main>
+
+<script>
+'use strict';
+/* =====================================================
+   水準測量野帳アプリ（器高式・野帳形式）
+   行は2種類：
+     BS行（器械を据えた点）… 測点名・BS・GHを入力 → IH = GH + BS（自動）
+     FS行（測った点）      … 測点名・FSを入力     → GH = IH − FS（自動）
+   データはlocalStorageに保存。Excel(.xlsx)は外部ライブラリ
+   なしでブラウザ内生成（ZIP+XMLを自前で組み立て）。
+   ===================================================== */
+
+const KEY = 'level_surveys_v2';
+const OLD_KEY = 'level_surveys_v1';
+
+/* ---------- データ ---------- */
+let surveys = [];
+let current = null;   // 編集中の測量
+
+function load(){
+  try{ surveys = JSON.parse(localStorage.getItem(KEY)) || null; }
+  catch(e){ surveys = null; }
+  if(surveys === null){
+    surveys = migrateV1();
+    save();
+  }
+}
+/* 旧形式（基準点カード＋中間点/もりかえ点）→ 新形式（BS行/FS行）への変換 */
+function migrateV1(){
+  let old;
+  try{ old = JSON.parse(localStorage.getItem(OLD_KEY)) || []; }
+  catch(e){ old = []; }
+  return old.map(s=>{
+    const rows = [{kind:'BS', name: s.bmName || 'KBM', bs: s.bmBs || '', gh: s.bmElev || '', fs:''}];
+    let ih = addNum(num(s.bmElev), num(s.bmBs));
+    for(const r of (s.rows || [])){
+      const fs = num(r.fs);
+      const gh = (ih != null && fs != null) ? ih - fs : null;
+      rows.push({kind:'FS', name: r.name || '', fs: r.fs || '', bs:'', gh:''});
+      if(r.type === 'TP'){
+        rows.push({kind:'BS', name: r.name || '', bs: r.bs || '', gh: gh == null ? '' : String(Math.round(gh*1000)/1000), fs:''});
+        ih = addNum(gh, num(r.bs));
+      }
+    }
+    return { id: s.id, name: s.name, date: s.date, rows, createdAt: s.createdAt };
+  });
+}
+function addNum(a, b){ return (a != null && b != null) ? a + b : null; }
+function save(){
+  localStorage.setItem(KEY, JSON.stringify(surveys));
+}
+function today(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function newSurvey(){
+  return {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    name: '', date: today(),
+    rows: [ {kind:'BS', name:'KBM', bs:'', gh:'', fs:''} ],
+    createdAt: Date.now()
+  };
+}
+
+/* ---------- 計算（器高式） ---------- */
+function num(v){
+  if(v === '' || v == null) return null;
+  const x = parseFloat(v);
+  return isNaN(x) ? null : x;
+}
+function fmt(x){
+  return x == null ? '—' : String(Math.round(x));
+}
+/* 各行の計算値を返す: BS行→{ih}, FS行→{gh} */
+function compute(s){
+  let ih = null;
+  const out = { rows: [], last: null };
+  for(const r of s.rows){
+    if(r.kind === 'BS'){
+      const gh = num(r.gh), bs = num(r.bs);
+      ih = (gh != null && bs != null) ? gh + bs : null;
+      out.rows.push({ ih, gh: null });
+      if(gh != null) out.last = gh;
+    }else{
+      const fs = num(r.fs);
+      const gh = (ih != null && fs != null) ? ih - fs : null;
+      out.rows.push({ ih: null, gh });
+      if(gh != null) out.last = gh;
+    }
+  }
+  return out;
+}
+
+/* ---------- 画面切替 ---------- */
+const $ = id => document.getElementById(id);
+
+function showList(){
+  current = null;
+  $('editView').classList.add('hidden');
+  $('backBtn').classList.add('hidden');
+  $('listView').classList.remove('hidden');
+  renderList();
+}
+function showEdit(s){
+  current = s;
+  $('listView').classList.add('hidden');
+  $('editView').classList.remove('hidden');
+  $('backBtn').classList.remove('hidden');
+  $('svName').value = s.name;
+  $('svDate').value = s.date;
+  renderRows();
+}
+
+/* ---------- 一覧画面 ---------- */
+function renderList(){
+  const box = $('surveyList');
+  box.innerHTML = '';
+  const sorted = [...surveys].sort((a,b)=> (b.date+'').localeCompare(a.date+'') || b.createdAt - a.createdAt);
+  if(sorted.length === 0){
+    box.innerHTML = '<p class="empty">まだ測量記録がありません。<br>「＋ 新しい測量を始める」から作成してください。</p>';
+    return;
+  }
+  for(const s of sorted){
+    const item = document.createElement('div');
+    item.className = 'listItem';
+    const info = document.createElement('div');
+    info.className = 'info';
+    const nm = document.createElement('div');
+    nm.className = 'name';
+    nm.textContent = s.name || '（無題の測量）';
+    const mt = document.createElement('div');
+    mt.className = 'meta';
+    mt.textContent = s.date + '　' + s.rows.length + '行';
+    info.appendChild(nm); info.appendChild(mt);
+    const del = document.createElement('button');
+    del.className = 'delBtn';
+    del.textContent = '🗑';
+    del.addEventListener('click', ev=>{
+      ev.stopPropagation();
+      if(confirm('「' + (s.name || '無題の測量') + '」を削除しますか？\nこの操作は取り消せません。')){
+        surveys = surveys.filter(x=>x.id !== s.id);
+        save(); renderList();
+      }
+    });
+    item.appendChild(info); item.appendChild(del);
+    item.addEventListener('click', ()=> showEdit(s));
+    box.appendChild(item);
+  }
+}
+
+/* ---------- 入力画面（野帳テーブル） ---------- */
+function renderRows(){
+  const area = $('rowsArea');
+  area.innerHTML = '';
+  current.rows.forEach((r, i)=>{
+    const row = document.createElement('div');
+    row.className = 'grid ' + (r.kind === 'BS' ? 'gridRow-bs' : 'gridRow-fs');
+    row.dataset.idx = i;
+
+    // 測点名
+    const nameIn = document.createElement('input');
+    nameIn.className = 'cell nameIn';
+    nameIn.value = r.name;
+    nameIn.placeholder = r.kind === 'BS' ? '器械点' : '測点';
+    nameIn.addEventListener('input', ()=>{ r.name = nameIn.value; save(); });
+    row.appendChild(nameIn);
+
+    if(r.kind === 'BS'){
+      // BS入力
+      row.appendChild(numInput(r.bs, v=>{ r.bs = v; }));
+      // IH（自動）
+      row.appendChild(calcCell('ihCell'));
+      // FS（空欄）
+      row.appendChild(blankCell());
+      // GH入力
+      row.appendChild(numInput(r.gh, v=>{ r.gh = v; }));
+    }else{
+      // BS（空欄）
+      row.appendChild(blankCell());
+      // IH（空欄）
+      row.appendChild(blankCell());
+      // FS入力
+      row.appendChild(numInput(r.fs, v=>{ r.fs = v; }));
+      // GH（自動）
+      row.appendChild(calcCell('ghCell'));
+    }
+
+    // 削除
+    const del = document.createElement('button');
+    del.className = 'delBtn';
+    del.textContent = '✕';
+    del.addEventListener('click', ()=>{
+      if(confirm('この行を削除しますか？')){
+        current.rows.splice(i,1);
+        save(); renderRows();
+      }
+    });
+    row.appendChild(del);
+
+    area.appendChild(row);
+  });
+  updateCalc();
+}
+
+function numInput(value, onChange){
+  const inp = document.createElement('input');
+  inp.className = 'cell';
+  inp.inputMode = 'decimal';
+  inp.placeholder = '0';
+  inp.value = value || '';
+  inp.addEventListener('input', ()=>{ onChange(inp.value); save(); updateCalc(); });
+  return inp;
+}
+function calcCell(cls){
+  const d = document.createElement('div');
+  d.className = 'cell calcCell ' + cls;
+  d.textContent = '—';
+  return d;
+}
+function blankCell(){
+  const d = document.createElement('div');
+  d.className = 'cell blankCell';
+  return d;
+}
+
+function updateCalc(){
+  if(!current) return;
+  const res = compute(current);
+  const rows = $('rowsArea').children;
+  for(let i=0; i<rows.length; i++){
+    const ihEl = rows[i].querySelector('.ihCell');
+    if(ihEl) ihEl.textContent = fmt(res.rows[i].ih);
+    const ghEl = rows[i].querySelector('.ghCell');
+    if(ghEl) ghEl.textContent = fmt(res.rows[i].gh);
+  }
+  $('sumCount').textContent = current.rows.length;
+  $('sumLast').textContent = fmt(res.last);
+}
+
+function addRow(kind){
+  if(kind === 'BS'){
+    current.rows.push({kind:'BS', name:'', bs:'', gh:'', fs:''});
+  }else{
+    const n = current.rows.filter(r=>r.kind === 'FS').length + 1;
+    current.rows.push({kind:'FS', name:'測点' + n, fs:'', bs:'', gh:''});
+  }
+  save(); renderRows();
+  const rows = $('rowsArea').children;
+  if(rows.length) rows[rows.length-1].scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+/* ---------- イベント ---------- */
+$('newBtn').addEventListener('click', ()=>{
+  const s = newSurvey();
+  surveys.push(s);
+  save(); showEdit(s);
+});
+$('backBtn').addEventListener('click', showList);
+$('addFS').addEventListener('click', ()=> addRow('FS'));
+$('addBS').addEventListener('click', ()=> addRow('BS'));
+$('svName').addEventListener('input', e=>{ current.name = e.target.value; save(); });
+$('svDate').addEventListener('input', e=>{ current.date = e.target.value; save(); });
+$('exportBtn').addEventListener('click', ()=> exportExcel(current));
+
+/* =====================================================
+   Excel (.xlsx) 生成 — 外部ライブラリ不使用
+   xlsxの実体は「XMLファイルをZIPでまとめたもの」なので、
+   ZIP（無圧縮）とXMLを自前で組み立てる。
+   ===================================================== */
+
+/* CRC32（ZIPに必要なチェック値） */
+const crcTable = (()=>{
+  const t = new Uint32Array(256);
+  for(let n=0; n<256; n++){
+    let c = n;
+    for(let k=0; k<8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(buf){
+  let c = 0xFFFFFFFF;
+  for(let i=0; i<buf.length; i++) c = crcTable[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+/* ZIP組み立て（無圧縮） files: [{name, text}] */
+function buildZip(files){
+  const enc = new TextEncoder();
+  const d = new Date();
+  const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  const parts = [], central = [];
+  let offset = 0;
+  for(const f of files){
+    const nameB = enc.encode(f.name);
+    const data = enc.encode(f.text);
+    const crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true);
+    lh.setUint16(4, 20, true);
+    lh.setUint16(6, 0x0800, true);   // UTF-8ファイル名
+    lh.setUint16(8, 0, true);        // 無圧縮
+    lh.setUint16(10, dosTime, true);
+    lh.setUint16(12, dosDate, true);
+    lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true);
+    lh.setUint32(22, data.length, true);
+    lh.setUint16(26, nameB.length, true);
+    lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), nameB, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true);
+    ch.setUint16(4, 20, true);
+    ch.setUint16(6, 20, true);
+    ch.setUint16(8, 0x0800, true);
+    ch.setUint16(10, 0, true);
+    ch.setUint16(12, dosTime, true);
+    ch.setUint16(14, dosDate, true);
+    ch.setUint32(16, crc, true);
+    ch.setUint32(20, data.length, true);
+    ch.setUint32(24, data.length, true);
+    ch.setUint16(28, nameB.length, true);
+    ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), nameB);
+    offset += 30 + nameB.length + data.length;
+  }
+  const cdSize = central.reduce((s,p)=>s+p.length, 0);
+  const eocd = new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0, 0x06054b50, true);
+  eocd.setUint16(8, files.length, true);
+  eocd.setUint16(10, files.length, true);
+  eocd.setUint32(12, cdSize, true);
+  eocd.setUint32(16, offset, true);
+  const all = [...parts, ...central, new Uint8Array(eocd.buffer)];
+  const total = all.reduce((s,p)=>s+p.length, 0);
+  const out = new Uint8Array(total);
+  let pos = 0;
+  for(const p of all){ out.set(p, pos); pos += p.length; }
+  return out;
+}
+
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* セル定義: {v, t:'s'(文字)|'n'(数値), s:スタイル番号} スタイル 0=標準 1=0.000表示 2=太字 */
+function sheetXml(rows){
+  let body = '';
+  rows.forEach((cells, ri)=>{
+    let rowXml = '';
+    cells.forEach((c, ci)=>{
+      if(c == null || c.v === '' || c.v == null) return;
+      const ref = String.fromCharCode(65 + ci) + (ri + 1);
+      if(c.t === 'n'){
+        rowXml += '<c r="' + ref + '" s="' + (c.s||0) + '"><v>' + c.v + '</v></c>';
+      }else{
+        rowXml += '<c r="' + ref + '" s="' + (c.s||0) + '" t="inlineStr"><is><t xml:space="preserve">' + esc(c.v) + '</t></is></c>';
+      }
+    });
+    body += '<row r="' + (ri+1) + '">' + rowXml + '</row>';
+  });
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + '<cols>'
+    + '<col min="1" max="1" width="14" customWidth="1"/>'
+    + '<col min="2" max="5" width="11" customWidth="1"/>'
+    + '</cols>'
+    + '<sheetData>' + body + '</sheetData>'
+    + '</worksheet>';
+}
+
+function buildXlsx(aoa){
+  const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    + '<Default Extension="xml" ContentType="application/xml"/>'
+    + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+    + '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+    + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+    + '</Types>';
+  const rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+    + '</Relationships>';
+  const workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+    + '<sheets><sheet name="野帳" sheetId="1" r:id="rId1"/></sheets>'
+    + '</workbook>';
+  const wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+    + '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+    + '</Relationships>';
+  const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + '<numFmts count="1"><numFmt numFmtId="164" formatCode="0"/></numFmts>'
+    + '<fonts count="2">'
+    + '<font><sz val="11"/><name val="Yu Gothic"/></font>'
+    + '<font><b/><sz val="11"/><name val="Yu Gothic"/></font>'
+    + '</fonts>'
+    + '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'
+    + '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+    + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+    + '<cellXfs count="3">'
+    + '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+    + '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'
+    + '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+    + '</cellXfs>'
+    + '</styleSheet>';
+  return buildZip([
+    {name:'[Content_Types].xml', text: contentTypes},
+    {name:'_rels/.rels',          text: rootRels},
+    {name:'xl/workbook.xml',      text: workbook},
+    {name:'xl/_rels/workbook.xml.rels', text: wbRels},
+    {name:'xl/styles.xml',        text: styles},
+    {name:'xl/worksheets/sheet1.xml',   text: sheetXml(aoa)}
+  ]);
+}
+
+/* 測量データ → 野帳形式の表（測点 | BS | IH | FS | GH） */
+function surveyToAoa(s){
+  const res = compute(s);
+  const S = (v, st)=>({v, t:'s', s:st||0});
+  const N = (v)=> v == null ? null : {v: Math.round(v), t:'n', s:1};
+  const Nraw = (v)=>{ const x = num(v); return x == null ? null : {v:x, t:'n', s:1}; };
+  const aoa = [];
+  aoa.push([S('水準測量野帳（器高式）', 2)]);
+  aoa.push([S('測量名'), S(s.name || '（無題）')]);
+  aoa.push([S('日付'), S(s.date)]);
+  aoa.push([]);
+  aoa.push([S('測点',2), S('BS (mm)',2), S('IH (mm)',2), S('FS (mm)',2), S('GH (mm)',2)]);
+  s.rows.forEach((r, i)=>{
+    const c = res.rows[i];
+    if(r.kind === 'BS'){
+      aoa.push([ S(r.name), Nraw(r.bs), N(c.ih), null, Nraw(r.gh) ]);
+    }else{
+      aoa.push([ S(r.name), null, null, Nraw(r.fs), N(c.gh) ]);
+    }
+  });
+  return aoa;
+}
+
+function exportExcel(s){
+  if(!s) return;
+  if(s.rows.length === 0){
+    alert('行がまだありません。「＋ 測点を追加」から観測値を入力してください。');
+    return;
+  }
+  const bytes = buildXlsx(surveyToAoa(s));
+  const blob = new Blob([bytes], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (s.name || '水準測量') + '_' + s.date + '.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* ---------- 起動 ---------- */
+load();
+showList();
+
+/* オフライン対応（Webとして開いたときだけ有効。電波がない現場でも動く） */
+if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
