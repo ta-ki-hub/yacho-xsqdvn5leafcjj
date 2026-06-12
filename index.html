@@ -101,12 +101,17 @@
   }
   .delBtn:active{color:var(--danger);}
   .legend{
-    font-size:12px; color:var(--sub); padding:6px 4px 0; line-height:1.7;
+    font-size:13px; color:var(--sub); padding:8px 4px 0; line-height:1.7;
   }
-  .legend .bsMark{
-    display:inline-block; width:12px; height:12px; background:var(--bsrow);
-    border:1px solid #ecd9a0; border-radius:3px; vertical-align:-1px;
+  .legend .lrow{
+    display:flex; align-items:flex-start; gap:7px; margin-bottom:5px;
   }
+  .legend .mark{
+    flex:none; width:15px; height:15px; border-radius:4px; margin-top:3px;
+  }
+  .legend .markBs{background:var(--bsrow); border:1px solid #ecd9a0;}
+  .legend .markCalc{background:#f2f7f4; border:1px solid var(--accent);}
+  .legend .markFs{background:#fff; border:1px solid var(--line);}
 
   .addBtns{display:flex; gap:10px; margin:14px 0;}
   .addBtns button{
@@ -202,8 +207,10 @@
     </div>
     <div id="rowsArea"></div>
     <div class="legend">
-      <span class="bsMark"></span> 色付きの行＝器械を据えた点（BSとGHを入力 → IH自動計算）<br>
-      白い行＝測った点（FSを入力 → GH自動計算）　単位はすべて mm
+      <div class="lrow"><span class="mark markBs"></span><span>黄色の行＝器械を据えた点<br>（BSとGHを入力 → IH自動計算）</span></div>
+      <div class="lrow"><span class="mark markCalc"></span><span>緑色＝自動計算</span></div>
+      <div class="lrow"><span class="mark markFs"></span><span>白い行＝測った点（FSを入力 → GH自動計算）</span></div>
+      <div class="lrow"><span>※単位はすべて mm</span></div>
     </div>
   </section>
 
@@ -346,7 +353,7 @@ function renderList(){
     nm.textContent = s.name || '（無題の測量）';
     const mt = document.createElement('div');
     mt.className = 'meta';
-    mt.textContent = s.date + '　' + s.rows.length + '行';
+    mt.textContent = s.date;
     info.appendChild(nm); info.appendChild(mt);
     const menuBtn = document.createElement('button');
     menuBtn.className = 'menuBtn';
