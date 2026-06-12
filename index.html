@@ -320,6 +320,20 @@ function renderList(){
     mt.className = 'meta';
     mt.textContent = s.date + '　' + s.rows.length + '行';
     info.appendChild(nm); info.appendChild(mt);
+    const dup = document.createElement('button');
+    dup.className = 'delBtn';
+    dup.textContent = '⧉';
+    dup.title = 'コピーして新しい測量を作る';
+    dup.addEventListener('click', ev=>{
+      ev.stopPropagation();
+      const c = JSON.parse(JSON.stringify(s));
+      c.id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+      c.name = (s.name || '無題の測量') + '（コピー）';
+      c.date = today();
+      c.createdAt = Date.now();
+      surveys.push(c);
+      save(); showEdit(c);
+    });
     const del = document.createElement('button');
     del.className = 'delBtn';
     del.textContent = '🗑';
@@ -330,7 +344,7 @@ function renderList(){
         save(); renderList();
       }
     });
-    item.appendChild(info); item.appendChild(del);
+    item.appendChild(info); item.appendChild(dup); item.appendChild(del);
     item.addEventListener('click', ()=> showEdit(s));
     box.appendChild(item);
   }
