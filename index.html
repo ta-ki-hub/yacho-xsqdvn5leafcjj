@@ -58,6 +58,12 @@
     background:#fff; color:var(--text);
   }
   input:focus{outline:2px solid var(--accent); border-color:var(--accent);}
+  /* iPhoneの日付入力が横にはみ出すのを防ぐ */
+  input[type="date"]{
+    -webkit-appearance:none; appearance:none;
+    min-width:0; max-width:100%;
+    min-height:44px; text-align:left;
+  }
 
   /* ======== 野帳テーブル ======== */
   .grid{
@@ -125,7 +131,35 @@
   .listItem .info{flex:1; min-width:0;}
   .listItem .name{font-size:16px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .listItem .meta{font-size:13px; color:var(--sub); margin-top:3px;}
+  .menuBtn{
+    background:#f2f4f7; border:none; color:var(--sub); font-size:20px;
+    font-weight:700; padding:6px 14px; border-radius:8px; min-height:40px;
+  }
+  .menuBtn:active{background:var(--line);}
   .empty{text-align:center; color:var(--sub); font-size:14px; padding:30px 0;}
+
+  /* メニュー（下から出る選択画面） */
+  .sheetOverlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:50;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  .sheet{
+    background:var(--bg); width:100%; max-width:560px;
+    border-radius:16px 16px 0 0;
+    padding:14px 14px calc(14px + env(safe-area-inset-bottom));
+  }
+  .sheetTitle{
+    font-size:13px; color:var(--sub); text-align:center;
+    padding:4px 0 12px; font-weight:700;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .sheetBtn{
+    display:block; width:100%; background:#fff; border:1px solid var(--line);
+    border-radius:10px; font-size:16px; font-weight:700; padding:14px;
+    margin-bottom:8px; color:var(--text);
+  }
+  .sheetBtn.danger{color:var(--danger);}
+  .sheetBtn:active{background:#f2f4f7;}
 
   .note{font-size:12px; color:var(--sub); text-align:center; margin-top:18px; line-height:1.7;}
 </style>
@@ -177,12 +211,6 @@
     <button id="addFS">＋ 測点を追加（FS）</button>
     <button id="addBS">＋ 器械点を追加（BS）</button>
   </div>
-
-  <section class="card">
-    <div class="cardHead">まとめ</div>
-    <div class="calcLine">行数：<span id="sumCount" class="calcVal">0</span><span class="unit">行</span></div>
-    <div class="calcLine">最後のGH：<span id="sumLast" class="calcVal">—</span><span class="unit">mm</span></div>
-  </section>
 
   <button id="exportBtn" class="primary">📄 Excelファイルを出力</button>
 </main>
@@ -320,34 +348,63 @@ function renderList(){
     mt.className = 'meta';
     mt.textContent = s.date + '　' + s.rows.length + '行';
     info.appendChild(nm); info.appendChild(mt);
-    const dup = document.createElement('button');
-    dup.className = 'delBtn';
-    dup.textContent = '⧉';
-    dup.title = 'コピーして新しい測量を作る';
-    dup.addEventListener('click', ev=>{
+    const menuBtn = document.createElement('button');
+    menuBtn.className = 'menuBtn';
+    menuBtn.textContent = '⋯';
+    menuBtn.title = 'メニュー';
+    menuBtn.addEventListener('click', ev=>{
       ev.stopPropagation();
-      const c = JSON.parse(JSON.stringify(s));
-      c.id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-      c.name = (s.name || '無題の測量') + '（コピー）';
-      c.date = today();
-      c.createdAt = Date.now();
-      surveys.push(c);
-      save(); showEdit(c);
+      openMenu(s);
     });
-    const del = document.createElement('button');
-    del.className = 'delBtn';
-    del.textContent = '🗑';
-    del.addEventListener('click', ev=>{
-      ev.stopPropagation();
-      if(confirm('「' + (s.name || '無題の測量') + '」を削除しますか？\nこの操作は取り消せません。')){
-        surveys = surveys.filter(x=>x.id !== s.id);
-        save(); renderList();
-      }
-    });
-    item.appendChild(info); item.appendChild(dup); item.appendChild(del);
+    item.appendChild(info); item.appendChild(menuBtn);
     item.addEventListener('click', ()=> showEdit(s));
     box.appendChild(item);
   }
+}
+
+/* 一覧のメニュー（コピー／削除を選ぶ画面） */
+function openMenu(s){
+  const ov = document.createElement('div');
+  ov.className = 'sheetOverlay';
+  const sheet = document.createElement('div');
+  sheet.className = 'sheet';
+  const close = ()=> ov.remove();
+
+  const title = document.createElement('div');
+  title.className = 'sheetTitle';
+  title.textContent = s.name || '（無題の測量）';
+  sheet.appendChild(title);
+
+  const mkBtn = (text, fn, danger)=>{
+    const b = document.createElement('button');
+    b.className = 'sheetBtn' + (danger ? ' danger' : '');
+    b.textContent = text;
+    b.addEventListener('click', fn);
+    sheet.appendChild(b);
+    return b;
+  };
+  mkBtn('⧉ コピーして新しい測量を作る', ()=>{
+    close();
+    const c = JSON.parse(JSON.stringify(s));
+    c.id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    c.name = (s.name || '無題の測量') + '（コピー）';
+    c.date = today();
+    c.createdAt = Date.now();
+    surveys.push(c);
+    save(); showEdit(c);
+  });
+  mkBtn('🗑 削除する', ()=>{
+    if(confirm('「' + (s.name || '無題の測量') + '」を削除しますか？\nこの操作は取り消せません。')){
+      close();
+      surveys = surveys.filter(x=>x.id !== s.id);
+      save(); renderList();
+    }
+  }, true);
+  mkBtn('キャンセル', close);
+
+  ov.addEventListener('click', e=>{ if(e.target === ov) close(); });
+  ov.appendChild(sheet);
+  document.body.appendChild(ov);
 }
 
 /* ---------- 入力画面（野帳テーブル） ---------- */
@@ -435,8 +492,6 @@ function updateCalc(){
     const ghEl = rows[i].querySelector('.ghCell');
     if(ghEl) ghEl.textContent = fmt(res.rows[i].gh);
   }
-  $('sumCount').textContent = current.rows.length;
-  $('sumLast').textContent = fmt(res.last);
 }
 
 function addRow(kind){
